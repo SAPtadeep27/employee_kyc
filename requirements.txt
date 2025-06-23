@@ -4,4 +4,6 @@ pillow
 pytesseract
 dnspython
 gunicorn
+python-dotenv
+Werkzeug
 
