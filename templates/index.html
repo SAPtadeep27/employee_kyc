@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart KYC Form</title>
+
+  <!-- tsParticles CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #d6895d;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+    }
+    #tsparticles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+    }
+    form {
+      background: rgb(246, 244, 248);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+      transition: all 0.6s ease;
+      animation: slideFadeIn 1s ease-in-out;
+      z-index: 1;
+    }
+    @keyframes slideFadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px 14px;
+      margin-bottom: 15px;
+      border: 1.5px solid #eeecf3;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border 0.2s ease;
+    }
+    input:focus, select:focus {
+      border-color: #3b82f6;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    button {
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    button:hover { background-color: #2563eb; }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #1f2937;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+    @media (max-width: 600px) {
+      form { padding: 20px; }
+      input, select, button { font-size: 14px; }
+    }
+  </style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const aadhaarFrontInput = document.getElementById("aadhaar_img");
+    const aadhaarBackInput = document.getElementById("aadhaar_back_img");
+    const panInput = document.getElementById("pan_img");
+  
+    const checkAndAutoFill = async () => {
+      const form = document.querySelector("form");
+      if (!aadhaarFrontInput.files.length || !aadhaarBackInput.files.length || !panInput.files.length) return;
+  
+      const formData = new FormData();
+      formData.append("aadhaar_img", aadhaarFrontInput.files[0]);
+      formData.append("aadhaar_back_img", aadhaarBackInput.files[0]);
+      formData.append("pan_img", panInput.files[0]);
+  
+      try {
+        const response = await fetch("/extract", {
+          method: "POST",
+          body: formData
+        });
+  
+        if (response.ok) {
+          const data = await response.json();
+          const af = data.aadhaar_front || {};
+          const ab = data.aadhaar_back || {};
+          const pan = data.pan || {};
+  
+          if (af.full_name) form.full_name.value = af.full_name;
+          if (af.dob) form.dob.value = af.dob;
+          if (af.gender) form.gender.value = af.gender;
+          if (af.aadhaar_number) form.aadhaar_number.value = af.aadhaar_number;
+          if (ab.address) form.address.value = ab.address;
+          if (pan.pan_number) form.pan_number.value = pan.pan_number;
+          if (pan.full_name && !form.full_name.value) form.full_name.value = pan.full_name;
+        } else {
+          console.error("Autofill failed");
+        }
+      } catch (err) {
+        console.error("Fetch error", err);
+      }
+    };
+  
+    aadhaarFrontInput.addEventListener("change", checkAndAutoFill);
+    aadhaarBackInput.addEventListener("change", checkAndAutoFill);
+    panInput.addEventListener("change", checkAndAutoFill);
+  
+    // Final form submit
+    document.getElementById("kyc-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+  
+      try {
+        const response = await fetch("/submit", {
+          method: "POST",
+          body: formData
+        });
+  
+        if (response.ok) {
+          alert("Form submitted successfully!");
+          form.reset();
+        } else {
+          alert("Submission failed.");
+        }
+      } catch (err) {
+        console.error("Submission error", err);
+      }
+    });
+  });
+  </script>
+  
+</head>
+
+<body>
+  <div id="tsparticles"></div>
+  <form id="kyc-form" action="/submit" method="POST" enctype="multipart/form-data" autocomplete="on">
+  <!-- All your inputs here -->
+
+
+
+    <h2>KYC Smart Upload Form</h2>
+
+    <label for="full_name">Full Name</label>
+    <input type="text" id="full_name" name="full_name" required />
+
+    <label for="father_name">Father's Name</label>
+    <input type="text" id="father_name" name="father_name" />
+
+    <label for="mother_name">Mother's Name</label>
+    <input type="text" id="mother_name" name="mother_name" />
+
+    <label for="dob">Date of Birth</label>
+    <input type="date" id="dob" name="dob" />
+
+    <label for="gender">Gender</label>
+    <select id="gender" name="gender">
+      <option value="">Select</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <label for="marital_status">Marital Status</label>
+    <select id="marital_status" name="marital_status">
+      <option value="">Select</option>
+      <option value="Single">Single</option>
+      <option value="Married">Married</option>
+    </select>
+
+    <label for="religion">Religion</label>
+    <input type="text" id="religion" name="religion" />
+
+    <label for="nationality">Nationality</label>
+    <input type="text" id="nationality" name="nationality" />
+
+    <label for="address">Address</label>
+    <input type="text" id="address" name="address" />
+
+    <label for="city">City</label>
+    <input type="text" id="city" name="city" />
+
+    <label for="state">State</label>
+    <input type="text" id="state" name="state" />
+
+    <label for="pincode">Pin Code</label>
+    <input type="text" id="pincode" name="pincode" />
+
+    <label for="phone">Phone Number</label>
+    <input type="tel" id="phone" name="phone" required />
+
+    <label for="email">Email ID</label>
+    <input type="email" id="email" name="email" />
+
+    <label for="aadhaar_img">Upload Aadhaar Card</label>
+    <input type="file" id="aadhaar_img" name="aadhaar_img" accept="image/*" required />
+
+    <label for="aadhaar_back_img">Upload Aadhaar Card (Back)</label>
+    <input type="file" id="aadhaar_back_img" name="aadhaar_back_img" accept="image/*" required />
+
+    <label for="aadhaar_number">Aadhaar Number</label>
+    <input type="text" id="aadhaar_number" name="aadhaar_number" />
+
+    <label for="pan_img">Upload PAN Card</label>
+    <input type="file" id="pan_img" name="pan_img" accept="image/*" required />
+
+    <label for="pan_number">PAN Number</label>
+    <input type="text" id="pan_number" name="pan_number" />
+    <label for="user_photo">Upload User Photo</label>
+    <input type="file" id="user_photo" name="user_photo" accept="image/*" required />
+
+    <label for="bank_account">Bank Account Number</label>
+    <input type="text" id="bank_account" name="bank_account" required />
+
+    <label for="ifsc_code">Bank IFSC Code</label>
+    <input type="text" id="ifsc_code" name="ifsc_code" required />
+
+    <label for="cheque_photo">Upload Cancelled Cheque / Passbook Photo</label>
+    <input type="file" id="cheque_photo" name="cheque_photo" accept="image/*" required />
+
+    <label for="upi_id">UPI ID</label>
+    <input type="text" id="upi_id" name="upi_id" />
+
+    <label for="dl_number">Driving License Number</label>
+    <input type="text" id="dl_number" name="dl_number" />
+
+    <label for="dl_type">Driving License Type</label>
+    <select id="dl_type" name="dl_type">
+      <option value="">Select</option>
+      <option value="LMV">LMV (Light Motor Vehicle)</option>
+      <option value="MCWG">MCWG (Motorcycle with Gear)</option>
+      <option value="MCWOG">MCWOG (Motorcycle without Gear)</option>
+      <option value="Transport">Transport</option>
+      <option value="Others">Others</option>
+    </select>
+
+    <label for="dl_photo">Upload Driving License Photo</label>
+    <input type="file" id="dl_photo" name="dl_photo" accept="image/*" />
+
+    <label for="emergency_contact">Emergency Contact Number</label>
+    <input type="tel" id="emergency_contact" name="emergency_contact" required />
+
+    <label for="remarks">Remarks</label>
+    <textarea id="remarks" name="remarks" rows="3" placeholder="Any additional info..."></textarea>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- tsParticles Config -->
+  <script>
+    tsParticles.load("tsparticles", {
+      background: { color: { value: "#f0f4f8" } },
+      particles: {
+        number: { value: 80, density: { enable: true, area: 800 } },
+        color: { value: "#3b82f6" },
+        shape: { type: "circle" },
+        opacity: { value: 0.5 },
+        size: { value: { min: 1, max: 4 } },
+        move: { enable: true, speed: 1, direction: "none", outMode: "out" },
+        links: { enable: true, distance: 120, color: "#60a5fa", opacity: 0.4, width: 1 }
+      },
+      interactivity: {
+        events: { onHover: { enable: true, mode: "grab" } },
+        modes: { grab: { distance: 140, links: { opacity: 0.7 } } }
+      },
+      detectRetina: true
+    });
+  </script>
+</body>
+</html>

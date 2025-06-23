@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Authentication - Smart KYC</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: 350px;
+        }
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #333;
+        }
+        input[type=email], input[type=password] {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #3498db;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .toggle-link {
+            margin-top: 15px;
+            text-align: center;
+            cursor: pointer;
+            color: #3498db;
+        }
+        .message {
+            color: red;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+    <script>
+        function toggleForm(showLogin) {
+            document.getElementById('signup-form').style.display = showLogin ? 'none' : 'block';
+            document.getElementById('login-form').style.display = showLogin ? 'block' : 'none';
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <h2 id="form-title">Sign Up</h2>
+
+    {% if message %}
+        <div class="message">{{ message }}</div>
+    {% endif %}
+
+    <form id="signup-form" method="POST" action="/signup">
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <form id="login-form" method="POST" action="/login" style="display:none">
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <select name="role" required>
+        <option value="employee">Login as Employee</option>
+        <option value="admin">Login as Admin</option>
+    </select>
+    <button type="submit">Log In</button>
+</form>
+
+    <div class="toggle-link" onclick="
+        if (document.getElementById('signup-form').style.display === 'none') {
+            toggleForm(false);
+            document.getElementById('form-title').innerText = 'Sign Up';
+        } else {
+            toggleForm(true);
+            document.getElementById('form-title').innerText = 'Log In';
+        }">
+        Already have an account? Log in here.
+    </div>
+</div>
+</body>
+</html>
+
