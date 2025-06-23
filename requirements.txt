@@ -1,7 +1,6 @@
 Flask==2.3.2
 pymongo==4.6.1
-pillow==pillow==9.5.0
-
+pillow==9.5.0
 pytesseract==0.3.10
 dnspython==2.4.2
 gunicorn==21.2.0
