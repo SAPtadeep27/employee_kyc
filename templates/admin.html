@@ -19,13 +19,18 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
-    h1 {
-      color: #2c3e50;
+    input, textarea {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
     }
 
-    h2 {
-      margin-top: 0;
-      color: #2c3e50;
+    .section-title {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #34495e;
     }
 
     .images {
@@ -47,17 +52,6 @@
       transform: scale(1.05);
     }
 
-    .label {
-      font-weight: bold;
-    }
-
-    .section-title {
-      margin-top: 20px;
-      font-size: 18px;
-      color: #34495e;
-    }
-
-    /* Modal styles */
     .modal {
       display: none;
       position: fixed;
@@ -80,7 +74,6 @@
       max-height: 70vh;
       object-fit: contain;
       border-radius: 8px;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
     }
 
     .modal-close {
@@ -96,89 +89,83 @@
     .modal-close:hover {
       color: #ccc;
     }
+
+    .save-btn {
+      background: #27ae60;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
   <h1>Admin Dashboard - KYC Entries</h1>
-<body>
- <div style="text-align: right; margin-bottom: 20px;">
+
+  <div style="text-align: right; margin-bottom: 20px;">
     <form action="{{ url_for('logout') }}" method="GET" style="display: inline;">
-      <button type="submit" style="padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">
-        Logout
-      </button>
+      <button type="submit" style="padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px;">Logout</button>
     </form>
   </div>
 
   {% for entry in entries %}
+  <form action="{{ url_for('update_entry', entry_id=entry._id) }}" method="POST">
     <div class="entry">
-      <h2>{{ entry.full_name }}</h2>
+      <h2><input name="full_name" value="{{ entry.full_name }}"></h2>
 
-      <p><span class="label">Father's Name:</span> {{ entry.father_name }}</p>
-      <p><span class="label">Mother's Name:</span> {{ entry.mother_name }}</p>
-      <p><span class="label">DOB:</span> {{ entry.dob }}</p>
-      <p><span class="label">Gender:</span> {{ entry.gender }}</p>
-      <p><span class="label">Marital Status:</span> {{ entry.marital_status }}</p>
-      <p><span class="label">Religion:</span> {{ entry.religion }}</p>
-      <p><span class="label">Nationality:</span> {{ entry.nationality }}</p>
-      <p><span class="label">Address:</span> {{ entry.address }}</p>
-      <p><span class="label">City:</span> {{ entry.city }}</p>
-      <p><span class="label">State:</span> {{ entry.state }}</p>
-      <p><span class="label">Pincode:</span> {{ entry.pincode }}</p>
-      <p><span class="label">Phone:</span> {{ entry.phone }}</p>
-      <p><span class="label">Email:</span> {{ entry.email }}</p>
-      <p><span class="label">Aadhaar Number:</span> {{ entry.aadhaar_number }}</p>
-      <p><span class="label">PAN Number:</span> {{ entry.pan_number }}</p>
+      <input name="father_name" value="{{ entry.father_name }}" placeholder="Father's Name">
+      <input name="mother_name" value="{{ entry.mother_name }}" placeholder="Mother's Name">
+      <input name="dob" value="{{ entry.dob }}" placeholder="DOB">
+      <input name="gender" value="{{ entry.gender }}" placeholder="Gender">
+      <input name="marital_status" value="{{ entry.marital_status }}" placeholder="Marital Status">
+      <input name="religion" value="{{ entry.religion }}" placeholder="Religion">
+      <input name="nationality" value="{{ entry.nationality }}" placeholder="Nationality">
+      <textarea name="address">{{ entry.address }}</textarea>
+      <input name="city" value="{{ entry.city }}" placeholder="City">
+      <input name="state" value="{{ entry.state }}" placeholder="State">
+      <input name="pincode" value="{{ entry.pincode }}" placeholder="Pincode">
+      <input name="phone" value="{{ entry.phone }}" placeholder="Phone">
+      <input name="email" value="{{ entry.email }}" placeholder="Email">
+      <input name="aadhaar_number" value="{{ entry.aadhaar_number }}" placeholder="Aadhaar Number">
+      <input name="pan_number" value="{{ entry.pan_number }}" placeholder="PAN Number">
 
       <p class="section-title">Bank Details</p>
-      <p><span class="label">Bank Account Number:</span> {{ entry.bank_account }}</p>
-      <p><span class="label">IFSC Code:</span> {{ entry.ifsc_code }}</p>
-      <p><span class="label">UPI ID:</span> {{ entry.upi_id }}</p>
+      <input name="bank_account" value="{{ entry.bank_account }}" placeholder="Bank Account">
+      <input name="ifsc_code" value="{{ entry.ifsc_code }}" placeholder="IFSC">
+      <input name="upi_id" value="{{ entry.upi_id }}" placeholder="UPI ID">
 
-      <p class="section-title">Driving License Info</p>
-      <p><span class="label">License Number:</span> {{ entry.dl_number }}</p>
-      <p><span class="label">License Type:</span> {{ entry.dl_type }}</p>
+      <p class="section-title">Driving License</p>
+      <input name="dl_number" value="{{ entry.dl_number }}" placeholder="DL Number">
+      <input name="dl_type" value="{{ entry.dl_type }}" placeholder="DL Type">
 
       <p class="section-title">Emergency & Remarks</p>
-      <p><span class="label">Emergency Contact:</span> {{ entry.emergency_contact }}</p>
-      <p><span class="label">Remarks:</span> {{ entry.remarks }}</p>
+      <input name="emergency_contact" value="{{ entry.emergency_contact }}" placeholder="Emergency Contact">
+      <textarea name="remarks">{{ entry.remarks }}</textarea>
 
       <p class="section-title">Uploaded Documents</p>
       <div class="images">
-        <div>
-          <p class="label">User Photo:</p>
-          <img src="{{ url_for('uploaded_file', filename=entry.user_photo_path) }}" alt="User Photo" onclick="zoomImage(this.src)">
-        </div>
-        <div>
-          <p class="label">Aadhaar Front:</p>
-          <img src="{{ url_for('uploaded_file', filename=entry.aadhaar_img_path) }}" alt="Aadhaar Front" onclick="zoomImage(this.src)">
-        </div>
-        <div>
-          <p class="label">Aadhaar Back:</p>
-          <img src="{{ url_for('uploaded_file', filename=entry.aadhaar_back_img_path) }}" alt="Aadhaar Back" onclick="zoomImage(this.src)">
-        </div>
-        <div>
-          <p class="label">PAN Card:</p>
-          <img src="{{ url_for('uploaded_file', filename=entry.pan_img_path) }}" alt="PAN Card" onclick="zoomImage(this.src)">
-        </div>
-        <div>
-          <p class="label">Cancelled Cheque / Passbook:</p>
-          <img src="{{ url_for('uploaded_file', filename=entry.cheque_photo_path) }}" alt="Cheque Photo" onclick="zoomImage(this.src)">
-        </div>
+        <div><p>User Photo:</p><img src="{{ url_for('uploaded_file', filename=entry.user_photo_path) }}" onclick="zoomImage(this.src)"></div>
+        <div><p>Aadhaar Front:</p><img src="{{ url_for('uploaded_file', filename=entry.aadhaar_img_path) }}" onclick="zoomImage(this.src)"></div>
+        <div><p>Aadhaar Back:</p><img src="{{ url_for('uploaded_file', filename=entry.aadhaar_back_img_path) }}" onclick="zoomImage(this.src)"></div>
+        <div><p>PAN Card:</p><img src="{{ url_for('uploaded_file', filename=entry.pan_img_path) }}" onclick="zoomImage(this.src)"></div>
+        <div><p>Cheque:</p><img src="{{ url_for('uploaded_file', filename=entry.cheque_photo_path) }}" onclick="zoomImage(this.src)"></div>
         {% if entry.dl_photo_path %}
-        <div>
-          <p class="label">Driving License Photo:</p>
-          <img src="{{ url_for('uploaded_file', filename=entry.dl_photo_path) }}" alt="DL Photo" onclick="zoomImage(this.src)">
-        </div>
+        <div><p>DL Photo:</p><img src="{{ url_for('uploaded_file', filename=entry.dl_photo_path) }}" onclick="zoomImage(this.src)"></div>
         {% endif %}
       </div>
+
+      <button class="save-btn" type="submit">Save Changes</button>
     </div>
+  </form>
   {% endfor %}
 
-  <!-- Modal for Zoom Image -->
+  <!-- Modal -->
   <div id="zoomModal" class="modal" onclick="closeModal()">
     <span class="modal-close" onclick="closeModal()">&times;</span>
     <div class="modal-content">
-      <img id="modalImage" src="" alt="Zoomed Image">
+      <img id="modalImage" src="" alt="Zoomed">
     </div>
   </div>
 

@@ -18,7 +18,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Tesseract OCR path
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"/usr/bin/tesseract"
 
 # MongoDB setup
 
@@ -243,6 +243,22 @@ def admin_dashboard():
         return redirect('/auth')
     entries = list(collection.find())
     return render_template('admin.html', entries=entries)
+
+@app.route('/update/<entry_id>', methods=['POST'])
+def update_entry(entry_id):
+    if 'user' not in session or session.get('role') != 'admin':
+        return redirect('/auth')
+
+    updated_data = {key: request.form[key] for key in request.form}
+    updated_data = {k: v for k, v in updated_data.items() if v.strip() != ""}
+
+    collection.update_one(
+        {"_id": ObjectId(entry_id)},
+        {"$set": updated_data}
+    )
+
+    return redirect(url_for('admin_dashboard'))
+
 
 @app.route('/auth', methods=['GET'])
 def auth_page():
