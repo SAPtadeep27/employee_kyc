@@ -18,7 +18,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Tesseract OCR path
-pytesseract.pytesseract.tesseract_cmd = r"tesseract"
+pytesseract.pytesseract.tesseract_cmd = r"/usr/bin/tesseract"
+
 
 
 # MongoDB setup
