@@ -19,7 +19,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Tesseract OCR path
 pytesseract.pytesseract.tesseract_cmd = r"tesseract"
-app.run(host="0.0.0.0", port=5000)
+
 
 # MongoDB setup
 
@@ -318,4 +318,4 @@ def logout():
     return redirect('/auth')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+   app.run(host="0.0.0.0", port=5000)
