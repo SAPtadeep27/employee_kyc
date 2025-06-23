@@ -39,17 +39,23 @@ db = client["kyc_database"]
 collection = db["kyc_forms"]
 users_collection = db["users"]
 
+def preprocess_image(image_path):
+    image = Image.open(image_path).convert("L")  # Convert to grayscale
+    image = ImageOps.autocontrast(image)
+    image = image.filter(ImageFilter.MedianFilter(size=3))
+    image = ImageOps.invert(image)
+    image = image.point(lambda x: 0 if x < 140 else 255, '1')  # Binarize
+    return image
 # OCR and Preprocessing functions
 def extract_text(img_path):
     try:
-        image = Image.open(img_path)
-        image = ImageOps.invert(image)
-        image = image.filter(ImageFilter.MedianFilter())
-        text = pytesseract.image_to_string(image, lang='eng')
+        image = preprocess_image(img_path)
+        text = pytesseract.image_to_string(image, lang='eng',config='--psm 6')
         return text
     except Exception as e:
         print(f"Error extracting text from image {img_path}: {e}")
         return ""
+
 
 def clean_text(text):
     return "\n".join([line.strip() for line in text.split("\n") if line.strip()])
