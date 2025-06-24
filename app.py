@@ -1,13 +1,23 @@
 import re 
 from datetime import datetime
 from flask import Flask, request, render_template_string, jsonify, render_template, send_from_directory, redirect, session, url_for, flash
-import pytesseract
 from PIL import Image, ImageFilter, ImageOps
 import os
 from pymongo import MongoClient
 from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import quote_plus
+from google.cloud import vision
+from google.oauth2 import service_account
+import os
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "your_keyfile.json" 
+# Config
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+TEMPLATE_HTML = open("templates/index.html").read()
+CREDENTIALS = service_account.Credentials.from_service_account_file("your_keyfile.json")
+vision_client = vision.ImageAnnotatorClient(credentials=CREDENTIALS)
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -16,10 +26,6 @@ app.secret_key = 'your_secret_key_here'
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# Tesseract OCR path
-pytesseract.pytesseract.tesseract_cmd = r"/usr/bin/tesseract"
-
 
 
 # MongoDB setup
@@ -39,24 +45,18 @@ db = client["kyc_database"]
 collection = db["kyc_forms"]
 users_collection = db["users"]
 
-def preprocess_image(image_path):
-    image = Image.open(image_path).convert("L")  # Convert to grayscale
-    image = ImageOps.autocontrast(image)
-    image = image.filter(ImageFilter.MedianFilter(size=3))
-    image = ImageOps.invert(image)
-    image = image.point(lambda x: 0 if x < 140 else 255, '1')  # Binarize
-    return image
-# OCR and Preprocessing functions
-def extract_text(img_path):
-    try:
-        image = preprocess_image(img_path)
-        text = pytesseract.image_to_string(image, lang='eng',config='--psm 6')
-        return text
-    except Exception as e:
-        print(f"Error extracting text from image {img_path}: {e}")
-        return ""
+# OCR using Google Cloud Vision
+def extract_text_google(img_path):
+    with open(img_path, 'rb') as image_file:
+        content = image_file.read()
+    image = vision.Image(content=content)
+    response = vision_client.text_detection(image=image)
+    texts = response.text_annotations
+    if texts:
+        return texts[0].description
+    return ""
 
-
+# Text cleaning
 def clean_text(text):
     return "\n".join([line.strip() for line in text.split("\n") if line.strip()])
 
@@ -65,20 +65,36 @@ def parse_aadhaar_front(text):
     text = clean_text(text)
     lines = text.split('\n')
 
+    # Aadhaar number
     aadhaar_match = re.search(r'\b\d{4}\s\d{4}\s\d{4}\b', text)
     if aadhaar_match:
         data['aadhaar_number'] = aadhaar_match.group()
 
+    # DOB
     for line in lines:
-        dob_match = re.search(r'(\d{2}[\/\-]\d{2}[\/\-]\d{4})', line)
-        if dob_match:
-            try:
-                dob = datetime.strptime(dob_match.group(1), "%d-%m-%Y")
-            except:
-                dob = datetime.strptime(dob_match.group(1), "%d/%m/%Y")
-            data['dob'] = dob.strftime('%Y-%m-%d')
-            break
+        if 'dob' in line.lower():
+            dob_match = re.search(r'(\d{2}[\/\-]\d{2}[\/\-]\d{4})', line)
+            if dob_match:
+                try:
+                    dob = datetime.strptime(dob_match.group(1), "%d-%m-%Y")
+                except:
+                    dob = datetime.strptime(dob_match.group(1), "%d/%m/%Y")
+                data['dob'] = dob.strftime('%Y-%m-%d')
+                break
 
+    # Issue Date
+    for line in lines:
+        if 'issue' in line.lower():
+            issue_match = re.search(r'(\d{2}[\/\-]\d{2}[\/\-]\d{4})', line)
+            if issue_match:
+                try:
+                    issue_date = datetime.strptime(issue_match.group(1), "%d-%m-%Y")
+                except:
+                    issue_date = datetime.strptime(issue_match.group(1), "%d/%m/%Y")
+                data['issue_date'] = issue_date.strftime('%Y-%m-%d')
+                break
+
+    # Gender
     for line in lines:
         if 'male' in line.lower():
             data['gender'] = 'Male'
@@ -90,31 +106,27 @@ def parse_aadhaar_front(text):
             data['gender'] = 'Other'
             break
 
-    for line in lines:
-        line = line.strip().replace(";", "").replace(":", "")
-        if any(kw in line.lower() for kw in ['dob', 'year', 'male', 'female']):
-            continue
-        clean_line = re.sub(r'[^A-Za-z\s]', '', line)
-        words = clean_line.split()
-        if 2 <= len(words) <= 4:
-            if words[-1].lower() in ['a', 'mr', 'ms', 'mrs']:
-                words = words[:-1]
-            data['full_name'] = ' '.join(words)
+    # Full Name (Line before DOB)
+    for i in range(1, len(lines)):
+        if 'dob' in lines[i].lower():
+            name_line = lines[i - 1].strip()
+            clean_name = re.sub(r'[^A-Za-z\s]', '', name_line)
+            if 2 <= len(clean_name.split()) <= 4:
+                data['full_name'] = clean_name
             break
-    return data
 
+    return data
+# Aadhaar back parser
 def parse_aadhaar_back(text):
     data = {}
     text = clean_text(text)
     lines = text.split('\n')
-    address_lines = []
-    for line in lines:
-        if any(keyword in line.lower() for keyword in ['address', 'district', 'pin', 'state', 'city', 'village']):
-            address_lines.append(line)
+    address_lines = [line for line in lines if any(k in line.lower() for k in ['address', 'district', 'pin', 'state', 'city', 'village'])]
     if address_lines:
         data['address'] = ' '.join(address_lines)
     return data
 
+# PAN parser
 def parse_pan(text):
     data = {}
     text = clean_text(text)
@@ -122,11 +134,13 @@ def parse_pan(text):
     pan_match = re.search(r'\b[A-Z]{3,5}\d{4}[A-Z]\b', text)
     if pan_match:
         data['pan_number'] = pan_match.group()
+
     for line in lines:
         if re.match(r'^[A-Z][a-z]+(?:\s[A-Z][a-z]+)+$', line):
             data['full_name'] = line
             break
     return data
+
 
 @app.route('/')
 def index():
@@ -160,22 +174,15 @@ def extract():
         aadhaar_back_img.save(aadhaar_back_path)
         pan_img.save(pan_path)
 
-        aadhaar_text = extract_text(aadhaar_path)
-        aadhaar_back_text = extract_text(aadhaar_back_path)
-        pan_text = extract_text(pan_path)
+        aadhaar_text = extract_text_google(aadhaar_path)
+        aadhaar_back_text = extract_text_google(aadhaar_back_path)
+        pan_text = extract_text_google(pan_path)
 
-        aadhaar_data = parse_aadhaar_front(aadhaar_text or "")
-        aadhaar_back_data = parse_aadhaar_back(aadhaar_back_text or "")
-        pan_data = parse_pan(pan_text or "")
-
-        combined_data = {
-            "aadhaar_front": aadhaar_data,
-            "aadhaar_back": aadhaar_back_data,
-            "pan": pan_data
-        }
-
-        return jsonify(combined_data), 200
-
+        return jsonify({
+            "aadhaar_front": parse_aadhaar_front(aadhaar_text),
+            "aadhaar_back": parse_aadhaar_back(aadhaar_back_text),
+            "pan": parse_pan(pan_text)
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

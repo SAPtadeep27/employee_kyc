@@ -6,4 +6,8 @@ dnspython
 gunicorn
 python-dotenv
 Werkzeug
-
+google-cloud-vision
+google-auth
+google-auth-oauthlib
+google-api-core
+requests
