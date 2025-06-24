@@ -1,4 +1,6 @@
 import re 
+import tempfile
+import base64
 from datetime import datetime
 from flask import Flask, request, render_template_string, jsonify, render_template, send_from_directory, redirect, session, url_for, flash
 from PIL import Image, ImageFilter, ImageOps
@@ -9,19 +11,32 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import quote_plus
 from google.cloud import vision
 from google.oauth2 import service_account
-import os
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "your_keyfile.json" 
-# Config
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-TEMPLATE_HTML = open("templates/index.html").read()
-CREDENTIALS = service_account.Credentials.from_service_account_file("your_keyfile.json")
-vision_client = vision.ImageAnnotatorClient(credentials=CREDENTIALS)
+import os, base64
+from google.oauth2 import service_account
+from google.cloud import vision
+from dotenv import load_dotenv
+load_dotenv("key.env")
 
+# Read the base64-encoded service account
+b64 = os.environ.get("GOOGLE_CREDS_B64")
+if not b64:
+    raise RuntimeError("Missing GOOGLE_CREDS_B64 env var")
 
+# Write to a temp file in an OS-safe location
+with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+    temp_file.write(base64.b64decode(b64))
+    creds_path = temp_file.name
+
+# Load the credentials
+credentials = service_account.Credentials.from_service_account_file(creds_path)
+vision_client = vision.ImageAnnotatorClient(credentials=credentials)
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
+
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+TEMPLATE_HTML = open("templates/index.html").read()
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
