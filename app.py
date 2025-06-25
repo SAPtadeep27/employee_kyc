@@ -266,6 +266,8 @@ def submit():
             "upi_id": request.form.get("upi_id"),
             "dl_number": request.form.get("dl_number"),
             "dl_type": request.form.get("dl_type"),
+            "dl_issue_date": request.form.get("dl_issue_date"),
+            "dl_validity_nt": request.form.get("dl_validity_nt"),
             "emergency_contact": request.form.get("emergency_contact"),
             "remarks": request.form.get("remarks"),
             "aadhaar_img_path": save_image(aadhaar_img, "aadhaar_front"),
