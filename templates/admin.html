@@ -139,7 +139,12 @@
       <p class="section-title">Driving License</p>
       <input name="dl_number" value="{{ entry.dl_number }}" placeholder="DL Number">
       <input name="dl_type" value="{{ entry.dl_type }}" placeholder="DL Type">
+      <label for="dl_issue_date">DL Issue Date</label>
+      <input type="date" name="dl_issue_date" value="{{ entry.dl_issue_date }}">
 
+      <label for="dl_validity_nt">DL Validity (NT)</label>
+      <input type="date" name="dl_validity_nt" value="{{ entry.dl_validity_nt }}">
+      
       <p class="section-title">Emergency & Remarks</p>
       <input name="emergency_contact" value="{{ entry.emergency_contact }}" placeholder="Emergency Contact">
       <textarea name="remarks">{{ entry.remarks }}</textarea>
