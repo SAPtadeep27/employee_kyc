@@ -131,30 +131,55 @@ def parse_aadhaar_front(text):
             break
 
     return data
-# Aadhaar back parser
 def parse_aadhaar_back(text):
     data = {}
     text = clean_text(text)
-    lines = text.split('\n')
-    address_lines = [line for line in lines if any(k in line.lower() for k in ['address', 'district', 'pin', 'state', 'city', 'village'])]
-    if address_lines:
-        data['address'] = ' '.join(address_lines)
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    
+    address = ""
+    capture = False
+    for line in lines:
+        if "address" in line.lower():
+            capture = True
+            continue
+        if capture:
+            if re.search(r'\d{6}', line):  # Likely pin code line
+                address += " " + line
+                break
+            address += " " + line
+
+    if address:
+        data['address'] = address.strip()
+
     return data
 
-# PAN parser
+
+import re
+
 def parse_pan(text):
     data = {}
     text = clean_text(text)
-    lines = text.split('\n')
-    pan_match = re.search(r'\b[A-Z]{3,5}\d{4}[A-Z]\b', text)
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+
+    # Extract PAN number (e.g., BUAPM8868H)
+    pan_match = re.search(r'\b[A-Z]{5}\d{4}[A-Z]\b', text)
     if pan_match:
         data['pan_number'] = pan_match.group()
 
+    # Extract father's name (assumed to be the second name line after filtering)
+    name_lines = []
     for line in lines:
-        if re.match(r'^[A-Z][a-z]+(?:\s[A-Z][a-z]+)+$', line):
-            data['full_name'] = line
-            break
+        if any(word in line.upper() for word in ["INCOME TAX", "GOVT", "PERMANENT", "ACCOUNT", "NUMBER", "SIGNATURE"]):
+            continue
+        if len(line.split()) >= 2:
+            name_lines.append(line)
+
+    if len(name_lines) >= 2:
+        data['father_name'] = name_lines[2]
+
     return data
+
+
 
 
 @app.route('/')
@@ -192,7 +217,6 @@ def extract():
         aadhaar_text = extract_text_google(aadhaar_path)
         aadhaar_back_text = extract_text_google(aadhaar_back_path)
         pan_text = extract_text_google(pan_path)
-
         return jsonify({
             "aadhaar_front": parse_aadhaar_front(aadhaar_text),
             "aadhaar_back": parse_aadhaar_back(aadhaar_back_text),

@@ -117,7 +117,7 @@
           if (af.aadhaar_number) form.aadhaar_number.value = af.aadhaar_number;
           if (ab.address) form.address.value = ab.address;
           if (pan.pan_number) form.pan_number.value = pan.pan_number;
-          if (pan.full_name && !form.full_name.value) form.full_name.value = pan.full_name;
+          if (pan.father_name) form.father_name.value = pan.father_name;
         } else {
           console.error("Autofill failed");
         }
