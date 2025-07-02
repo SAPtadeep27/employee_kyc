@@ -89,16 +89,17 @@
     const aadhaarFrontInput = document.getElementById("aadhaar_img");
     const aadhaarBackInput = document.getElementById("aadhaar_back_img");
     const panInput = document.getElementById("pan_img");
+    const dlInput = document.getElementById("dl_img");
   
     const checkAndAutoFill = async () => {
       const form = document.querySelector("form");
-      if (!aadhaarFrontInput.files.length || !aadhaarBackInput.files.length || !panInput.files.length) return;
+      if (!aadhaarFrontInput.files.length || !aadhaarBackInput.files.length || !panInput.files.length || !dlInput.files.length) return;
   
       const formData = new FormData();
       formData.append("aadhaar_img", aadhaarFrontInput.files[0]);
       formData.append("aadhaar_back_img", aadhaarBackInput.files[0]);
       formData.append("pan_img", panInput.files[0]);
-  
+      formData.append("dl_img", dlInput.files[0]);
       try {
         const response = await fetch("/extract", {
           method: "POST",
@@ -110,7 +111,7 @@
           const af = data.aadhaar_front || {};
           const ab = data.aadhaar_back || {};
           const pan = data.pan || {};
-  
+          const dl = data.driving_license || {};
           if (af.full_name) form.full_name.value = af.full_name;
           if (af.dob) form.dob.value = af.dob;
           if (af.gender) form.gender.value = af.gender;
@@ -118,6 +119,10 @@
           if (ab.address) form.address.value = ab.address;
           if (pan.pan_number) form.pan_number.value = pan.pan_number;
           if (pan.father_name) form.father_name.value = pan.father_name;
+          if (dl.dl_number) form.dl_number.value = dl.dl_number;
+          if (dl.dl_issue_date) form.dl_issue_date.value = dl.dl_issue_date;
+          if (dl.dl_validity_nt) form.dl_validity_nt.value = dl.dl_validity_nt;
+          if (dl.dl_type) form.dl_type.value = dl.dl_type;
         } else {
           console.error("Autofill failed");
         }
@@ -129,7 +134,7 @@
     aadhaarFrontInput.addEventListener("change", checkAndAutoFill);
     aadhaarBackInput.addEventListener("change", checkAndAutoFill);
     panInput.addEventListener("change", checkAndAutoFill);
-  
+    dlInput.addEventListener("change", checkAndAutoFill);
     // Final form submit
     document.getElementById("kyc-form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -266,7 +271,7 @@
     </select>
 
     <label for="dl_photo">Upload Driving License Photo</label>
-    <input type="file" id="dl_photo" name="dl_photo" accept="image/*" />
+    <input type="file" id="dl_img" name="dl_img" accept="image/*" required/>
 
     <label for="emergency_contact">Emergency Contact Number</label>
     <input type="tel" id="emergency_contact" name="emergency_contact" required />

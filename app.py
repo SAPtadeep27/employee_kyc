@@ -177,7 +177,38 @@ def parse_pan(text):
     if len(name_lines) >= 2:
         data['father_name'] = name_lines[2]
 
+def parse_driving_license(text):
+    data = {}
+    text = clean_text(text)
+    lines = text.split('\n')
+
+    # DL Number
+    dl_match = re.search(r'\bWB\d{2}\s?\d{11}\b', text)
+    if dl_match:
+        data['dl_number'] = dl_match.group().replace(" ", "")
+
+    # Issue date
+    issue_date_match = re.search(r'\b\d{2}[-/]\d{2}[-/]\d{4}\b', text)
+    if issue_date_match:
+        try:
+            issue_date = datetime.strptime(issue_date_match.group(), "%d-%m-%Y")
+            data['dl_issue_date'] = issue_date.strftime("%Y-%m-%d")
+        except:
+            pass
+
+    # Validity (NT)
+    validity_match = re.search(r'Validity\(NT\)\s*(\d{2}[-/]\d{2}[-/]\d{4})', text)
+    if validity_match:
+        try:
+            validity_date = datetime.strptime(validity_match.group(1), "%d-%m-%Y")
+            data['dl_validity_nt'] = validity_date.strftime("%Y-%m-%d")
+        except:
+            pass
+
     return data
+
+
+ 
 
 
 
@@ -202,25 +233,29 @@ def extract():
         aadhaar_img = request.files.get('aadhaar_img')
         aadhaar_back_img = request.files.get('aadhaar_back_img')
         pan_img = request.files.get('pan_img')
-
-        if not aadhaar_img or not aadhaar_back_img or not pan_img:
+        dl_img = request.files.get('dl_img')
+        if not aadhaar_img or not aadhaar_back_img or not pan_img or not dl_img:
             return jsonify({"error": "All images required."}), 400
 
         aadhaar_path = os.path.join(app.config['UPLOAD_FOLDER'], aadhaar_img.filename)
         aadhaar_back_path = os.path.join(app.config['UPLOAD_FOLDER'], aadhaar_back_img.filename)
         pan_path = os.path.join(app.config['UPLOAD_FOLDER'], pan_img.filename)
-
+        dl_path = os.path.join(app.config['UPLOAD_FOLDER'], dl_img.filename)
+        
         aadhaar_img.save(aadhaar_path)
         aadhaar_back_img.save(aadhaar_back_path)
         pan_img.save(pan_path)
+        dl_img.save(dl_path)
 
         aadhaar_text = extract_text_google(aadhaar_path)
         aadhaar_back_text = extract_text_google(aadhaar_back_path)
         pan_text = extract_text_google(pan_path)
+        dl_text = extract_text_google(dl_path)
         return jsonify({
             "aadhaar_front": parse_aadhaar_front(aadhaar_text),
             "aadhaar_back": parse_aadhaar_back(aadhaar_back_text),
-            "pan": parse_pan(pan_text)
+            "pan": parse_pan(pan_text),
+            "driving_license": parse_driving_license(dl_text)
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -233,7 +268,7 @@ def submit():
         pan_img = request.files.get('pan_img')
         user_photo = request.files.get('user_photo')
         cheque_photo = request.files.get('cheque_photo')
-        dl_photo = request.files.get('dl_photo')
+        dl_img = request.files.get('dl_img')
 
         if not (aadhaar_img and aadhaar_back_img and pan_img and user_photo and cheque_photo):
             return jsonify({"error": "All mandatory images are required."}), 400
@@ -275,7 +310,7 @@ def submit():
             "pan_img_path": save_image(pan_img, "pan"),
             "user_photo_path": save_image(user_photo, "user_photo"),
             "cheque_photo_path": save_image(cheque_photo, "cheque"),
-            "dl_photo_path": save_image(dl_photo, "dl_photo") if dl_photo else None,
+            "dl_photo_path": save_image(dl_img, "dl_photo") if dl_img else None,
             "submitted_at": datetime.utcnow()
         }
 
